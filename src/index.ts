@@ -32,34 +32,50 @@ type Message = {
   text: string;
 };
 
-
-bot.onText(/\*stock/, async (msg: Message) => {
+bot.onText(/\$stock/, async (msg: Message) => {
   const stockSymbol = msg.text.slice(6).trim();
   const chatId = msg.chat.id;
-  console.log("stockSymbol", stockSymbol)
-  try {
-    const response = await axios.get(
-      `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${stockSymbol}&apikey=${process.env.ALPHA_VANTAGE_API_KEY}`
-    );
-    const stockData = response.data;
-    if (stockData['Error Message'] || !stockData['Global Quote']) {
-      bot.sendMessage(chatId, 'Invalid stock symbol. Please try again.');
-      return;
-    }
-    console.log("stockData", stockData);
-    const lastPrice = stockData['Global Quote']['05. price'];
-    const changePercent = stockData['Global Quote']['10. change percent'];
-    const lastTradeTime = stockData['Global Quote']['07. latest trading day'];
-    const symbol = stockData['Global Quote']['01. symbol'];
-    if(!symbol){
-      bot.sendMessage(chatId, `Can't find the stock`);
-      return;
-    }
-    bot.sendMessage(chatId, `For ${symbol}: The last price $${lastPrice}, with ${changePercent} change. @ ${lastTradeTime} `);
-  } catch (error) {
-    console.error('Error fetching stock data: ', error);
-    bot.sendMessage(chatId, 'An error occurred. Please try again later.');
+  console.log("stockSymbol", stockSymbol);
+  const response = await stockRetriever(stockSymbol);
+  bot.sendMessage(chatId, response);
+});
+
+bot.onText(/\$gpt/, async (msg: Message) => {
+  const chatId = msg.chat.id;
+  const messageText = msg.text.slice(4).trim(); // Remove the "$gpt" keyword
+  bot.sendChatAction(chatId, "typing");
+  if (!messageText) {
+    bot.sendMessage(chatId, "Please type a message after the *gpt keyword.");
+    return;
   }
+  const interval = setInterval(() => {
+    bot.sendChatAction(chatId, "typing");
+  }, 2000);
+  const htmlOutput = await gptRetriever(messageText, chatId);
+  clearInterval(interval);
+  bot.sendMessage(chatId, htmlOutput, {
+    parse_mode: "HTML",
+  });
+});
+
+bot.onText(/\$gpt4/, async (msg: Message) => {
+  const chatId = msg.chat.id;
+  const messageText = msg.text.slice(5).trim(); // Remove the "$gpt" keyword
+  bot.sendChatAction(chatId, "typing");
+  if (!messageText) {
+    bot.sendMessage(chatId, "Please type a message after the *gpt keyword.");
+    return;
+  }
+  const interval = setInterval(() => {
+    bot.sendChatAction(chatId, "typing");
+  }, 2000);
+  const htmlOutput = await gptRetriever(messageText, chatId, true, {
+    model: "gpt-4",
+  });
+  clearInterval(interval);
+  bot.sendMessage(chatId, htmlOutput, {
+    parse_mode: "HTML",
+  });
 });
 
 bot.on("message", async (msg: Message) => {
@@ -79,6 +95,9 @@ bot.on("message", async (msg: Message) => {
     if (messageText.startsWith("/simple")) {
       return "simple";
     }
+    if (messageText.startsWith("/turbo")) {
+      return "turbo";
+    }
     return;
   };
 
@@ -97,49 +116,44 @@ bot.on("message", async (msg: Message) => {
         const responseTextTurbo = await fetchGptResponse(fixed);
         bot.sendMessage(chatId, responseTextTurbo);
         break;
-      default:
-        db.addMessage(chatId, messageText);
+      case "turbo": {
+        console.log("turbo");
+        const fixedTurbo = msg.text.slice(6).trim();
+        const interval = setInterval(() => {
+          bot.sendChatAction(chatId, "typing");
+        }, 2000);
+        const response = gptRetriever(fixedTurbo, chatId);
+        clearInterval(interval);
+        bot.sendMessage(chatId, response, {
+          parse_mode: "HTML",
+        });
+
+        break;
+      }
+      default: {
         const previous = db.getMessages(chatId);
+        const interval = setInterval(() => {
+          bot.sendChatAction(chatId, "typing");
+        }, 2000);
         const responseText = await fetchGptResponseTurbo(
           messageText,
-          previous as string[]
+          previous as string[],
+          {
+            model: "gpt-4",
+          }
         );
+        clearInterval(interval);
+        // db.addMessage(chatId, messageText);
         db.addMessage(chatId, responseText);
         const htmlOutput = formatHTMLResponse(responseText);
         bot.sendMessage(chatId, htmlOutput, {
           parse_mode: "HTML",
         });
         break;
+      }
     }
   }
 });
-
-bot.onText(/\*gpt/, async (msg: Message) => {
-  const chatId = msg.chat.id;
-  const messageText = msg.text.slice(5).trim(); // Remove the "$gpt" keyword
-  bot.sendChatAction(chatId, "typing");
-  if (!messageText) {
-    bot.sendMessage(chatId, "Please type a message after the *gpt keyword.");
-    return;
-  }
-
-  try {
-    const previous = db.getMessages(chatId);
-    const responseText = await fetchGptResponseTurbo(messageText, previous);
-    const htmlOutput = formatHTMLResponse(responseText);
-    db.addMessage(chatId, responseText);
-    bot.sendMessage(chatId, htmlOutput, {
-      parse_mode: "HTML",
-    });
-  } catch (error) {
-    console.error("GPT Error:", error);
-    bot.sendMessage(
-      chatId,
-      "An error occurred while fetching the GPT response. Please try again."
-    );
-  }
-});
-
 
 async function fetchGptResponseTurbo(
   message: string,
@@ -224,4 +238,52 @@ function formatHTMLResponse(response: string) {
       a: ["href"],
     },
   });
+}
+
+async function stockRetriever(stockSymbol: string) {
+  try {
+    const response = await axios.get(
+      `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${stockSymbol}&apikey=${process.env.ALPHA_VANTAGE_API_KEY}`
+    );
+    const stockData = response.data;
+    if (stockData["Error Message"] || !stockData["Global Quote"]) {
+      return "Invalid stock symbol. Please try again.";
+    }
+
+    const lastPrice = stockData["Global Quote"]["05. price"];
+    const changePercent = stockData["Global Quote"]["10. change percent"];
+    const lastTradeTime = stockData["Global Quote"]["07. latest trading day"];
+    const symbol = stockData["Global Quote"]["01. symbol"];
+
+    if (!symbol) {
+      return `Can't find the stock`;
+    }
+
+    return `For ${symbol}: The last price $${lastPrice}, with ${changePercent} change. @ ${lastTradeTime} `;
+  } catch (error) {
+    console.error("Error fetching stock data: ", error);
+    return "An error occurred. Please try again later.";
+  }
+}
+
+async function gptRetriever(
+  messageText: string,
+  chatId: number,
+  html: boolean = true,
+  pattern: {} = {}
+) {
+  try {
+    const previous = db.getMessages(chatId);
+    const responseText = await fetchGptResponseTurbo(messageText, previous, {
+      model: "gpt-3.5-turbo",
+      ...pattern,
+    });
+    db.addMessage(chatId, messageText);
+    db.addMessage(chatId, responseText);
+    const htmlOutput = formatHTMLResponse(responseText);
+    return html ? htmlOutput : responseText;
+  } catch (error) {
+    console.error("GPT Error:", error);
+    return "An error occurred while fetching the GPT response. Please try again.";
+  }
 }
