@@ -43,7 +43,7 @@ bot.onText(/\$stock/, async (msg: Message) => {
 bot.onText(/\$gpt4/, async (msg: Message) => {
   const chatId = msg.chat.id;
   const messageText = msg.text.slice(5).trim(); // Remove the "$gpt" keyword
-  console.log("GPT4")
+  console.log("GPT4");
   bot.sendChatAction(chatId, "typing");
   if (!messageText) {
     bot.sendMessage(chatId, "Please type a message after the *gpt keyword.");
@@ -100,6 +100,13 @@ bot.on("message", async (msg: Message) => {
     if (messageText.startsWith("/turbo")) {
       return "turbo";
     }
+    if (
+      messageText.startsWith("$stock") ||
+      messageText.startsWith("$gpt4") ||
+      messageText.startsWith("$gpt")
+    ) {
+      return "skip";
+    }
     return;
   };
 
@@ -132,6 +139,8 @@ bot.on("message", async (msg: Message) => {
 
         break;
       }
+      case "skip":
+        break;
       default: {
         const previous = db.getMessages(chatId);
         const interval = setInterval(() => {
