@@ -40,27 +40,10 @@ bot.onText(/\$stock/, async (msg: Message) => {
   bot.sendMessage(chatId, response);
 });
 
-bot.onText(/\$gpt/, async (msg: Message) => {
-  const chatId = msg.chat.id;
-  const messageText = msg.text.slice(4).trim(); // Remove the "$gpt" keyword
-  bot.sendChatAction(chatId, "typing");
-  if (!messageText) {
-    bot.sendMessage(chatId, "Please type a message after the *gpt keyword.");
-    return;
-  }
-  const interval = setInterval(() => {
-    bot.sendChatAction(chatId, "typing");
-  }, 2000);
-  const htmlOutput = await gptRetriever(messageText, chatId);
-  clearInterval(interval);
-  bot.sendMessage(chatId, htmlOutput, {
-    parse_mode: "HTML",
-  });
-});
-
 bot.onText(/\$gpt4/, async (msg: Message) => {
   const chatId = msg.chat.id;
   const messageText = msg.text.slice(5).trim(); // Remove the "$gpt" keyword
+  console.log("GPT4")
   bot.sendChatAction(chatId, "typing");
   if (!messageText) {
     bot.sendMessage(chatId, "Please type a message after the *gpt keyword.");
@@ -72,6 +55,25 @@ bot.onText(/\$gpt4/, async (msg: Message) => {
   const htmlOutput = await gptRetriever(messageText, chatId, true, {
     model: "gpt-4",
   });
+  clearInterval(interval);
+  bot.sendMessage(chatId, htmlOutput, {
+    parse_mode: "HTML",
+  });
+  return;
+});
+
+bot.onText(/\$gpt\s/, async (msg: Message) => {
+  const chatId = msg.chat.id;
+  const messageText = msg.text.slice(4).trim(); // Remove the "$gpt" keyword
+  bot.sendChatAction(chatId, "typing");
+  if (!messageText) {
+    bot.sendMessage(chatId, "Please type a message after the *gpt keyword.");
+    return;
+  }
+  const interval = setInterval(() => {
+    bot.sendChatAction(chatId, "typing");
+  }, 2000);
+  const htmlOutput = await gptRetriever(messageText, chatId);
   clearInterval(interval);
   bot.sendMessage(chatId, htmlOutput, {
     parse_mode: "HTML",
@@ -259,7 +261,7 @@ async function stockRetriever(stockSymbol: string) {
       return `Can't find the stock`;
     }
 
-    return `For ${symbol}: The last price $${lastPrice}, with ${changePercent} change. @ ${lastTradeTime} `;
+    return `${symbol}: \nPrice $${lastPrice}, \n${changePercent} change. \n${lastTradeTime} `;
   } catch (error) {
     console.error("Error fetching stock data: ", error);
     return "An error occurred. Please try again later.";
