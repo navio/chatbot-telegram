@@ -109,7 +109,11 @@ bot.onText(/\*gpt/, async (msg: Message) => {
   }
 });
 
-async function fetchGptResponseTurbo(message: string, previous: string[]) {
+async function fetchGptResponseTurbo(
+  message: string,
+  previous: string[],
+  params = {}
+) {
   const assistantMessages = previous.map((message) => ({
     role: "assistant",
     content: message,
@@ -127,12 +131,18 @@ async function fetchGptResponseTurbo(message: string, previous: string[]) {
     },
     ...assistantMessages,
   ] as ChatCompletionRequestMessage[];
+
+  const defaultParams = {
+    model: "gpt-3.5-turbo",
+    temperature: 0.2,
+    presence_penalty: 1,
+    frequency_penalty: 0.5,
+  };
+
   try {
     const response = (await openai.createChatCompletion({
-      temperature: 0.2,
-      presence_penalty: 1,
-      frequency_penalty: 0.5,
-      model: "gpt-3.5-turbo",
+      ...defaultParams,
+      ...params,
       messages: messages,
     })) as { data: { choices: { message: { content: string } }[] } };
     const messageText = response.data.choices[0].message.content;
