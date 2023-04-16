@@ -3,6 +3,7 @@ import { marked } from "marked";
 import sanitizeHtml from "sanitize-html";
 import Memory from "./memory";
 import dotenv from "dotenv";
+import axios from "axios";
 const TelegramBot = require("node-telegram-bot-api");
 
 dotenv.config();
@@ -30,6 +31,36 @@ type Message = {
   chat: { id: number };
   text: string;
 };
+
+
+bot.onText(/\*stock/, async (msg: Message) => {
+  const stockSymbol = msg.text.slice(6).trim();
+  const chatId = msg.chat.id;
+  console.log("stockSymbol", stockSymbol)
+  try {
+    const response = await axios.get(
+      `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${stockSymbol}&apikey=${process.env.ALPHA_VANTAGE_API_KEY}`
+    );
+    const stockData = response.data;
+    if (stockData['Error Message'] || !stockData['Global Quote']) {
+      bot.sendMessage(chatId, 'Invalid stock symbol. Please try again.');
+      return;
+    }
+    console.log("stockData", stockData);
+    const lastPrice = stockData['Global Quote']['05. price'];
+    const changePercent = stockData['Global Quote']['10. change percent'];
+    const lastTradeTime = stockData['Global Quote']['07. latest trading day'];
+    const symbol = stockData['Global Quote']['01. symbol'];
+    if(!symbol){
+      bot.sendMessage(chatId, `Can't find the stock`);
+      return;
+    }
+    bot.sendMessage(chatId, `For ${symbol}: The last price $${lastPrice}, with ${changePercent} change. @ ${lastTradeTime} `);
+  } catch (error) {
+    console.error('Error fetching stock data: ', error);
+    bot.sendMessage(chatId, 'An error occurred. Please try again later.');
+  }
+});
 
 bot.on("message", async (msg: Message) => {
   console.log("userID", msg.from.id);
@@ -108,6 +139,7 @@ bot.onText(/\*gpt/, async (msg: Message) => {
     );
   }
 });
+
 
 async function fetchGptResponseTurbo(
   message: string,
