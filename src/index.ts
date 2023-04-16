@@ -100,6 +100,9 @@ bot.on("message", async (msg: Message) => {
     if (messageText.startsWith("/turbo")) {
       return "turbo";
     }
+    if (messageText.startsWith("/clear")) {
+      return "clear";
+    }
     if (
       messageText.startsWith("$stock") ||
       messageText.startsWith("$gpt4") ||
@@ -139,6 +142,10 @@ bot.on("message", async (msg: Message) => {
 
         break;
       }
+      case "clear":
+        db.clearMessages(chatId);
+        bot.sendMessage(chatId, "Messages cleared");
+        break;
       case "skip":
         break;
       default: {
@@ -148,14 +155,14 @@ bot.on("message", async (msg: Message) => {
         }, 2000);
         const responseText = await fetchGptResponseTurbo(
           messageText,
-          previous as string[],
+          previous,
           {
             model: "gpt-4",
           }
         );
         clearInterval(interval);
-        // db.addMessage(chatId, messageText);
-        db.addMessage(chatId, responseText);
+        db.addMessage(chatId, 'user', messageText);
+        db.addMessage(chatId,'assistant', responseText);
         const htmlOutput = formatHTMLResponse(responseText);
         bot.sendMessage(chatId, htmlOutput, {
           parse_mode: "HTML",
@@ -168,25 +175,26 @@ bot.on("message", async (msg: Message) => {
 
 async function fetchGptResponseTurbo(
   message: string,
-  previous: string[],
+  previous: { sender: string; content: string }[],
   params = {}
 ) {
-  const assistantMessages = previous.map((message) => ({
-    role: "assistant",
-    content: message,
+  const assistantMessages = previous.map(({sender, content}) => ({
+    role: sender,
+    content,
   }));
-  console.log("trail", assistantMessages.length);
+
+  console.log("trail", assistantMessages.length, JSON.stringify(assistantMessages));
   const messages = [
     {
       role: "system",
       content:
         "You are an assistant knowledgeable in Software Development and all General Knowledge that provides helpful and informative responses.",
     },
+    ...assistantMessages,
     {
       role: "user",
       content: message,
     },
-    ...assistantMessages,
   ] as ChatCompletionRequestMessage[];
 
   const defaultParams = {
@@ -289,8 +297,8 @@ async function gptRetriever(
       model: "gpt-3.5-turbo",
       ...pattern,
     });
-    db.addMessage(chatId, messageText);
-    db.addMessage(chatId, responseText);
+    db.addMessage(chatId, 'user' ,messageText);
+    db.addMessage(chatId, 'assistant' ,responseText);
     const htmlOutput = formatHTMLResponse(responseText);
     return html ? htmlOutput : responseText;
   } catch (error) {
