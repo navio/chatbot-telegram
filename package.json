@@ -1,0 +1,28 @@
+{
+  "dependencies": {
+    "dotenv": "^16.0.3",
+    "marked": "^4.3.0",
+    "node-telegram-bot-api": "^0.61.0",
+    "openai": "^3.2.1",
+    "sanitize-html": "^2.10.0"
+  },
+  "name": "chat_gpt_telegram",
+  "version": "1.0.0",
+  "description": "Bot to GPT",
+  "main": "index.js",
+  "scripts": {
+    "start": "nodemon --watch 'src/**/*' -e ts,tsx --exec 'ts-node' src/index.ts",
+    "test": "test"
+  },
+  "keywords": [
+    "GPT"
+  ],
+  "author": "alberton",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/marked": "^4.0.8",
+    "@types/sanitize-html": "^2.9.0",
+    "nodemon": "^2.0.22",
+    "ts-node": "^10.9.1"
+  }
+}
