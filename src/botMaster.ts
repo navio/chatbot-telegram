@@ -7,8 +7,8 @@ export class BotMaster {
   private botToken: string;
   private openAiApiKey: string;
   private bot: typeof TelegramBot;
-  private gpt: GptAssistant;
-  private db: Memory;
+  public gpt: GptAssistant;
+  public db: Memory;
 
   constructor(botToken: string, openAiApiKey: string) {
     // Initialize bot token and OpenAI API key
@@ -21,28 +21,37 @@ export class BotMaster {
     this.gpt = new GptAssistant(this.openAiApiKey);
   }
 
-  // Reusable functions for event listeners
-  async handleStockEvent(msg: any) {
+  static async handleStockEvent(msg: any) {
     const stockSymbol = msg.slice(6).trim();
     const response = await stockRetriever(stockSymbol);
     return response;
   }
 
-  async handleGPTEvent(
+  static async handleGPTEvent(
     msg: string,
     chatID: number,
+    gpt: GptAssistant,
+    db: Memory,
     params: { [key: string]: string | number } = {}
   ) {
     if (!msg) {
       return "Please type a message after the *gpt keyword.";
     }
-    const messages = this.db.getMessages(chatID);
-    const output = await this.gpt.fetchGptResponseTurbo(msg, messages, params);
-    this.db.addMessage(chatID, "user", msg);
-    this.db.addMessage(chatID, "assistant", output);
+    const messages = db.getMessages(chatID);
+    const output = await gpt.fetchGptResponseTurbo(msg, messages, params);
+    db.addMessage(chatID, "user", msg);
+    db.addMessage(chatID, "assistant", output);
 
-    const formattedOutput = this.gpt.formatHTMLResponse(output);
+    const formattedOutput = gpt.formatHTMLResponse(output);
     return formattedOutput;
+  }
+
+  async handleGPTEventInternal(
+    msg: string,
+    chatID: number,
+    params: { [key: string]: string | number } = {}
+  ) {
+    return BotMaster.handleGPTEvent(msg, chatID, this.gpt, this.db, params);
   }
 
   startTypingInterval(chatId: number) {
@@ -67,12 +76,12 @@ export class BotMaster {
       let response = "";
       // Stock event listener
       if (messageText.startsWith("/stock")) {
-        response = await this.handleStockEvent(messageText);
+        response = await BotMaster.handleStockEvent(messageText);
       }
       // GPT4 event listener
       else if (messageText.startsWith("*gpt4")) {
         const interval = this.startTypingInterval(chatId);
-        response = await this.handleGPTEvent(
+        response = await this.handleGPTEventInternal(
           messageText.slice(5).trim(),
           chatId,
           {
@@ -83,7 +92,7 @@ export class BotMaster {
       }
       // GPT event listener
       else if (messageText.startsWith("*gpt")) {
-        response = await this.handleGPTEvent(
+        response = await this.handleGPTEventInternal(
           messageText.slice(4).trim(),
           chatId
         );
@@ -165,9 +174,13 @@ export class BotMaster {
               // start typing action
               const interval = this.startTypingInterval(chatId);
               // get response
-              const response = await this.handleGPTEvent(messageText, chatId, {
-                model: "gpt-4",
-              });
+              const response = await this.handleGPTEventInternal(
+                messageText,
+                chatId,
+                {
+                  model: "gpt-4",
+                }
+              );
               clearInterval(interval);
               // send response
               this.bot.sendMessage(chatId, response, {
