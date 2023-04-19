@@ -3,6 +3,8 @@ import axios from "axios";
 const API_KEY = process.env.ALPHA_VANTAGE_API_KEY;
 export async function stockRetriever(stockSymbol: string) {
   try {
+    const isNaN = Number.isNaN(Number(stockSymbol));
+    if (!isNaN) return;
     const response = await axios.get(
       `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${stockSymbol}&apikey=${API_KEY}`
     );

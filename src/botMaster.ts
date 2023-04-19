@@ -73,7 +73,7 @@ export class BotMaster {
       const chatId = msg.chat.id;
       const userId = msg.from.username;
 
-      let response = "";
+      let response = undefined;
       // Stock event listener
       if (messageText.startsWith("/stock")) {
         response = await BotMaster.handleStockEvent(messageText);
@@ -114,7 +114,7 @@ export class BotMaster {
 
         // Personal Code
 
-        this.bot.sendChatAction(chatId, "typing");
+        // this.bot.sendChatAction(chatId, "typing");
         const checkForKeys = (messageText: string) => {
           if (messageText.startsWith("/start")) {
             return "start";

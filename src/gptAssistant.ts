@@ -48,7 +48,7 @@ export class GptAssistant {
       model: "gpt-3.5-turbo",
       temperature: 0.2,
       presence_penalty: 1,
-      frequency_penalty: 0.5,
+      frequency_penalty: 0.7,
     };
 
     try {
