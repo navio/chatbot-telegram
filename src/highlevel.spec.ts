@@ -14,7 +14,7 @@ describe('BotMaster', () => {
     let botMaster: BotMaster;
   
     beforeEach(() => {
-      botMaster = new BotMaster('test_bot_token', 'test_openai_api_key');
+      botMaster = new BotMaster('test_bot_token', 'test_openai_api_key', ['test_member']);
     });
   
     afterEach(() => {
