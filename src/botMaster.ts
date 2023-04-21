@@ -107,7 +107,7 @@ export class BotMaster {
           for (const stock of stocks) {
             const stockSymbol = stock.slice(1); // Remove the '$' symbol
             response = await stockRetriever(stockSymbol);
-            this.bot.sendMessage(chatId, response);
+            response && this.bot.sendMessage(chatId, response);
           }
           return;
         }
