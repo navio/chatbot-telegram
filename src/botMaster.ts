@@ -9,11 +9,13 @@ export class BotMaster {
   private bot: typeof TelegramBot;
   public gpt: GptAssistant;
   public db: Memory;
+  private members: string[];
 
-  constructor(botToken: string, openAiApiKey: string) {
+  constructor(botToken: string, openAiApiKey: string, allowed_members: string[]) {
     // Initialize bot token and OpenAI API key
     this.botToken = botToken;
     this.openAiApiKey = openAiApiKey;
+    this.members = allowed_members;
 
     // Set up the bot, Memory and GptAssistant instances
     this.bot = new TelegramBot(this.botToken, { polling: true });
@@ -64,14 +66,15 @@ export class BotMaster {
   start() {
     // Default message event listener
     this.bot.on("message", async (msg: any) => {
-      console.log("userID", msg.from.id);
+      console.log("userID", msg.from.username);
       console.log("chatID", msg.chat.id);
 
       const messageText = msg?.text?.trim() || "";
       if (!messageText) return;
 
       const chatId = msg.chat.id;
-      const userId = msg.from.username;
+      const username = msg.from.username;
+      const fromId = msg.from.id;
 
       let response = undefined;
       // Stock event listener
@@ -138,7 +141,7 @@ export class BotMaster {
           return;
         };
         const keys = checkForKeys(messageText);
-        if (userId === "alnavarro" && chatId === 473091077) {
+        if ( this.members.includes(username) && chatId === fromId) {
           switch (keys) {
             case "start":
               this.bot.sendMessage(chatId, "Welcome to the bot!");
