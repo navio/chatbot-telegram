@@ -13,16 +13,19 @@ export async function stockRetriever(stockSymbol: string) {
       return "Invalid stock symbol. Please try again.";
     }
 
-    const lastPrice = stockData["Global Quote"]["05. price"];
-    const changePercent = stockData["Global Quote"]["10. change percent"];
-    const lastTradeTime = stockData["Global Quote"]["07. latest trading day"];
     const symbol = stockData["Global Quote"]["01. symbol"];
 
     if (!symbol) {
       return `Can't find the stock symbol ${stockSymbol}`;
     }
 
-    return `${symbol} $${lastPrice} \n${changePercent} change. \n${lastTradeTime} `;
+    const allStockData = Object.keys(stockData["Global Quote"]).reduce((acc, key) => {
+      if(key === '01. symbol') return acc + `${stockData["Global Quote"][key]}:\n`;
+      const newLine = `${key}: ${stockData["Global Quote"][key]}\n`
+      return acc + newLine;
+    }, '')
+
+    return allStockData;
   } catch (error) {
     console.error("Error fetching stock data: ", error);
     return "An error occurred. Please try again later.";

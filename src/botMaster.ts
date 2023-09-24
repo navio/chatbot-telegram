@@ -103,7 +103,7 @@ export class BotMaster {
       // Process other messages
       else {
         // Process stock symbols starting with $
-        const stockRegex = /\$[^\s]+/g;
+        const stockRegex = /\$[a-zA-Z]+\b/g;
         const stocks = messageText.match(stockRegex);
 
         if (stocks && stocks.length) {
@@ -181,7 +181,7 @@ export class BotMaster {
                 messageText,
                 chatId,
                 {
-                  model: "gpt-4",
+                  // model: "gpt-4",
                 }
               );
               clearInterval(interval);
