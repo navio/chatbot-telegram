@@ -1,31 +1,25 @@
 import axios from "axios";
 
-const API_KEY = process.env.ALPHA_VANTAGE_API_KEY;
 export async function stockRetriever(stockSymbol: string) {
+  const API_KEY = process.env.FINNHUB_API_KEY;
   try {
     const isNaN = Number.isNaN(Number(stockSymbol));
-    if (!isNaN) return '';
+    if (!isNaN) return "";
     const response = await axios.get(
-      `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${stockSymbol}&apikey=${API_KEY}`
+      `https://finnhub.io/api/v1/quote?symbol=${stockSymbol}&token=${API_KEY}`
     );
     const stockData = response.data;
-    if (stockData["Error Message"] || !stockData["Global Quote"]) {
+    if (!stockData["c"]) {
       return "Invalid stock symbol. Please try again.";
     }
 
-    const symbol = stockData["Global Quote"]["01. symbol"];
+    const currentPrice = stockData["c"];
+    const previousClose = stockData["pc"];
+    const highPrice = stockData["h"];
+    const lowPrice = stockData["l"];
+    const percentage = stockData["dp"];
 
-    if (!symbol) {
-      return `Can't find the stock symbol ${stockSymbol}`;
-    }
-
-    const allStockData = Object.keys(stockData["Global Quote"]).reduce((acc, key) => {
-      if(key === '01. symbol') return acc + `${stockData["Global Quote"][key]}:\n`;
-      const newLine = `${key}: ${stockData["Global Quote"][key]}\n`
-      return acc + newLine;
-    }, '')
-
-    return allStockData;
+    return `${stockSymbol}\n Current price: $${currentPrice} \n Previous close: $${previousClose} \n High: $${highPrice} \n Low: $${lowPrice} \n Delta: ${percentage}%`;
   } catch (error) {
     console.error("Error fetching stock data: ", error);
     return "An error occurred. Please try again later.";
