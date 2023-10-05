@@ -19,7 +19,7 @@ export async function stockRetriever(stockSymbol: string) {
     const lowPrice = stockData["l"];
     const percentage = stockData["dp"];
 
-    return `${stockSymbol}\n Current price: $${currentPrice} \n Previous close: $${previousClose} \n High: $${highPrice} \n Low: $${lowPrice} \n Delta: ${percentage}%`;
+    return `${stockSymbol.toLocaleUpperCase()}\n Current price: $${currentPrice} \n Previous close: $${previousClose} \n High: $${highPrice} \n Low: $${lowPrice} \n Delta: ${percentage}%`;
   } catch (error) {
     console.error("Error fetching stock data: ", error);
     return "An error occurred. Please try again later.";
