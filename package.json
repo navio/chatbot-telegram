@@ -5,7 +5,8 @@
     "marked": "^4.3.0",
     "node-telegram-bot-api": "^0.61.0",
     "openai": "^3.2.1",
-    "sanitize-html": "^2.10.0"
+    "sanitize-html": "^2.10.0",
+    "typescript": "^5.2.2"
   },
   "name": "chat_gpt_telegram",
   "version": "1.0.0",
